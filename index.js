@@ -72,6 +72,12 @@ async function run() {
       const result = await txDatabase.updateOne(filter, updateDoc, options);
       res.send(result);
     });
+
+    app.get("/find-tutors", async (req, res) => {
+      const result = await txDatabase.find({}).toArray();
+      // console.log(result);
+      res.send(result);
+    });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
