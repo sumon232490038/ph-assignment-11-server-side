@@ -46,6 +46,32 @@ async function run() {
       const result = await txDatabase.deleteOne(query);
       res.send(result);
     });
+    app.get("/tutorialBy/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await txDatabase.findOne(query);
+      res.send(result);
+    });
+
+    app.post("/updateTutorial/:id", async (req, res) => {
+      const id = req.params.id;
+      const data = req.body;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          name: data.name,
+          email: data.email,
+          photoUrl: data.photoUrl,
+          price: data.price,
+          review: data.review,
+          language: data.language,
+          descripiton: data.descripiton,
+        },
+      };
+      const result = await txDatabase.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
