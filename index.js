@@ -28,6 +28,17 @@ async function run() {
       const result = await txDatabase.insertOne(tutorial);
       res.send(result);
     });
+
+    app.get("/myTutorials", async (req, res) => {
+      const userEamil = req?.query?.email;
+      let filter = {};
+      if (userEamil) {
+        const filter = { email: "osman@goni.com" };
+      }
+      const find = txDatabase.find(filter);
+      const result = await find.toArray();
+      res.send(result);
+    });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
