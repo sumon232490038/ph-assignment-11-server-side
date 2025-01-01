@@ -52,6 +52,12 @@ async function run() {
       const result = await txDatabase.findOne(query);
       res.send(result);
     });
+    app.get("/tutor/details/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await txDatabase.findOne(query);
+      res.send(result);
+    });
 
     app.post("/updateTutorial/:id", async (req, res) => {
       const id = req.params.id;
@@ -67,6 +73,7 @@ async function run() {
           review: data.review,
           language: data.language,
           descripiton: data.descripiton,
+          tutorialName: data.tutorialName,
         },
       };
       const result = await txDatabase.updateOne(filter, updateDoc, options);
