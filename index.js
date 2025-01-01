@@ -75,7 +75,7 @@ async function run() {
 
     app.get("/find-tutors", async (req, res) => {
       const result = await txDatabase.find({}).toArray();
-      // console.log(result);
+      console.log(result);
       res.send(result);
     });
     console.log(
