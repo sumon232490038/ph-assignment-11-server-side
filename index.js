@@ -62,6 +62,7 @@ async function run() {
     app.post("/updateTutorial/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
+      console.log(data);
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updateDoc = {
@@ -82,7 +83,15 @@ async function run() {
 
     app.get("/find-tutors", async (req, res) => {
       const result = await txDatabase.find({}).toArray();
-      console.log(result);
+      res.send(result);
+    });
+    app.get("/find-tutors/category", async (req, res) => {
+      const texts = req.query.language;
+      console.log(texts);
+      const lowerCase = texts.toLowerCase();
+      const query = { language: lowerCase };
+
+      const result = await txDatabase.find(query).toArray();
       res.send(result);
     });
     console.log(
