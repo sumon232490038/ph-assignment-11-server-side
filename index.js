@@ -21,10 +21,20 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const txDatabase = client.db("tutorXpressDB").collection("tutorials");
+    const usersDatabase = client.db("tutorXpressDB").collection("users");
     const bookedDatabase = client
       .db("tutorXpressDB")
       .collection("bookedTutorials");
 
+    app.post("/tutorXpress/users", async (req, res) => {
+      const email = req?.query?.email;
+      const NewUser = {
+        email: email,
+      };
+      const result = await usersDatabase.insertOne(NewUser);
+      console.log(result);
+      res.send(result);
+    });
     app.post("/addTutorials", async (req, res) => {
       const tutorial = req?.body;
       const result = await txDatabase.insertOne(tutorial);
@@ -43,13 +53,13 @@ async function run() {
     });
 
     app.delete("/myTutorials/delete/:id", async (req, res) => {
-      const id = req.params.id;
+      const id = req?.params?.id;
       const query = { _id: new ObjectId(id) };
       const result = await txDatabase.deleteOne(query);
       res.send(result);
     });
     app.delete("/bookedTutor/delete/:id", async (req, res) => {
-      const id = req.params.id;
+      const id = req?.params?.id;
       const query = { _id: new ObjectId(id) };
       const result = await bookedDatabase.deleteOne(query);
       res.send(result);
@@ -130,9 +140,16 @@ async function run() {
 
     app.get("/totalTutor", async (req, res) => {
       const count = await txDatabase.estimatedDocumentCount();
-      // const result = await txDatabase.find({}).toArray();
-      console.log({ count });
-      res.send({ count });
+      const userCount = await usersDatabase.estimatedDocumentCount();
+      const find = txDatabase.find();
+      const result = await find.toArray();
+      let sum = 0;
+      const reviewCount = result.map(
+        (tutor) => (sum = sum + parseInt(tutor.review))
+      );
+      // console.log(result);
+
+      res.send({ count, userCount, sum });
     });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
