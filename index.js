@@ -44,8 +44,15 @@ async function run() {
 
     app.delete("/myTutorials/delete/:id", async (req, res) => {
       const id = req.params.id;
+
       const query = { _id: new ObjectId(id) };
-      const result = await txDatabase.deleteOne(query);
+      const result = await bookedDatabase.deleteOne(query);
+      res.send(result);
+    });
+    app.delete("/bookedTutor/delete/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookedDatabase.deleteOne(query);
       res.send(result);
     });
     app.get("/tutorialBy/:id", async (req, res) => {
@@ -64,7 +71,6 @@ async function run() {
     app.post("/updateTutorial/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
-      console.log(data);
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updateDoc = {
@@ -102,13 +108,24 @@ async function run() {
     });
     app.get("/myBookedTutors/page", async (req, res) => {
       const email = req.query.email;
-      // console.log(email);
+
       let filter = {};
       if (email) {
         filter = { userEmail: email };
       }
       const find = bookedDatabase.find(filter);
       const result = await find.toArray();
+      res.send(result);
+    });
+
+    app.post("/tutor/review/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $inc: { review: 1 },
+      };
+      const options = { upsert: true };
+      const result = await txDatabase.updateOne(filter, updateDoc, options);
       res.send(result);
     });
     console.log(
