@@ -44,9 +44,8 @@ async function run() {
 
     app.delete("/myTutorials/delete/:id", async (req, res) => {
       const id = req.params.id;
-
       const query = { _id: new ObjectId(id) };
-      const result = await bookedDatabase.deleteOne(query);
+      const result = await txDatabase.deleteOne(query);
       res.send(result);
     });
     app.delete("/bookedTutor/delete/:id", async (req, res) => {
@@ -127,6 +126,13 @@ async function run() {
       const options = { upsert: true };
       const result = await txDatabase.updateOne(filter, updateDoc, options);
       res.send(result);
+    });
+
+    app.get("/totalTutor", async (req, res) => {
+      const count = await txDatabase.estimatedDocumentCount();
+      // const result = await txDatabase.find({}).toArray();
+      console.log({ count });
+      res.send({ count });
     });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
