@@ -21,10 +21,12 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const txDatabase = client.db("tutorXpressDB").collection("tutorials");
+    const bookedDatabase = client
+      .db("tutorXpressDB")
+      .collection("bookedTutorials");
 
     app.post("/addTutorials", async (req, res) => {
       const tutorial = req?.body;
-      console.log(tutorial);
       const result = await txDatabase.insertOne(tutorial);
       res.send(result);
     });
@@ -33,7 +35,7 @@ async function run() {
       const userEamil = req?.query?.email;
       let filter = {};
       if (userEamil) {
-        const filter = { email: "osman@goni.com" };
+        filter = { email: userEamil };
       }
       const find = txDatabase.find(filter);
       const result = await find.toArray();
@@ -87,11 +89,26 @@ async function run() {
     });
     app.get("/find-tutors/category", async (req, res) => {
       const texts = req.query.language;
-      console.log(texts);
       const lowerCase = texts.toLowerCase();
       const query = { language: lowerCase };
-
       const result = await txDatabase.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/myBookedTutors", async (req, res) => {
+      const data = req.body;
+      const result = await bookedDatabase.insertOne(data);
+      res.send(result);
+    });
+    app.get("/myBookedTutors/page", async (req, res) => {
+      const email = req.query.email;
+      // console.log(email);
+      let filter = {};
+      if (email) {
+        filter = { userEmail: email };
+      }
+      const find = bookedDatabase.find(filter);
+      const result = await find.toArray();
       res.send(result);
     });
     console.log(
