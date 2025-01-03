@@ -6,13 +6,19 @@ const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 app.use(express.json());
-app.use(cors({ origin: ["http://localhost:5173/"], credentials: true }));
+// app.use(cors({ origin: ["http://localhost:5174/"], credentials: true }));
+app.use(
+  cors({
+    origin: ["http://localhost:5174"],
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 // console.log(process.env.SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xhl2h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+// Create a MongoClient with a MongoClientOptions object to set the Stable API version...
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -22,16 +28,25 @@ const client = new MongoClient(uri, {
 });
 // jwt Verify
 
-const verifyToken = (req, res, next) => {
-  next();
-};
+// const verifyToken = (req, res, next) => {
+//   next();
+// };
 
 async function run() {
   try {
     // jwt api
 
-    app.post("/jwt", async (req, res) => {
+    // main apis
+    const txDatabase = client.db("tutorXpressDB").collection("tutorials");
+    const usersDatabase = client.db("tutorXpressDB").collection("users");
+    const bookedDatabase = client
+      .db("tutorXpressDB")
+      .collection("bookedTutorials");
+
+    app.post("/jwt", (req, res) => {
       const user = req?.body;
+      console.log(user);
+
       const token = jwt.sign(user, process.env.SECRET_KEY, { expiresIn: "1h" });
       res
         .cookie("SumonToken", token, {
@@ -40,13 +55,6 @@ async function run() {
         })
         .send({ success: true });
     });
-
-    // main apis
-    const txDatabase = client.db("tutorXpressDB").collection("tutorials");
-    const usersDatabase = client.db("tutorXpressDB").collection("users");
-    const bookedDatabase = client
-      .db("tutorXpressDB")
-      .collection("bookedTutorials");
 
     app.post("/tutorXpress/users", async (req, res) => {
       const email = req?.query?.email;
