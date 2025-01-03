@@ -14,7 +14,7 @@ app.use(
   })
 );
 app.use(cookieParser());
-// console.log(process.env.SECRET_KEY);
+
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xhl2h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -28,9 +28,26 @@ const client = new MongoClient(uri, {
 });
 // jwt Verify
 
-// const verifyToken = (req, res, next) => {
-//   next();
-// };
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  if (!token) {
+    res.status(401).send({ message: "Sorry the token is not created!" });
+    return;
+  }
+
+  jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+    if (err) {
+      res
+        .status(401)
+        .send({ message: "sorry bro there is some problem in token" });
+      return;
+    }
+    req.user = decoded;
+  });
+  // console.log(req.user);
+
+  next();
+};
 
 async function run() {
   try {
@@ -43,13 +60,12 @@ async function run() {
       .db("tutorXpressDB")
       .collection("bookedTutorials");
 
-    app.post("/jwt", (req, res) => {
+    app.post("/jwt", async (req, res) => {
       const user = req?.body;
-      console.log(user);
 
-      const token = jwt.sign(user, process.env.SECRET_KEY, { expiresIn: "1h" });
+      const token = jwt.sign(user, process.env.SECRET_KEY, { expiresIn: "5h" });
       res
-        .cookie("SumonToken", token, {
+        .cookie("token", token, {
           httpOnly: true,
           secure: false,
         })
@@ -62,17 +78,28 @@ async function run() {
         email: email,
       };
       const result = await usersDatabase.insertOne(NewUser);
-      console.log(result);
+
       res.send(result);
     });
-    app.post("/addTutorials", async (req, res) => {
+    app.post("/addTutorials", verifyToken, async (req, res) => {
       const tutorial = req?.body;
+      const userNewEamil = req?.user?.email;
+
+      if (userNewEamil !== tutorial.email) {
+        res.status(403).send({ message: "sorry you are forbidden parson" });
+      }
       const result = await txDatabase.insertOne(tutorial);
       res.send(result);
     });
 
-    app.get("/myTutorials", async (req, res) => {
+    app.get("/myTutorials", verifyToken, async (req, res) => {
+      const userNewEamil = req?.user?.email;
       const userEamil = req?.query?.email;
+
+      if (userNewEamil !== userEamil) {
+        res.status(403).send({ message: "sorry you are forbidden parson" });
+      }
+
       let filter = {};
       if (userEamil) {
         filter = { email: userEamil };
@@ -107,9 +134,15 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/updateTutorial/:id", async (req, res) => {
+    app.post("/updateTutorial/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const data = req.body;
+      const userNewEamil = req?.user?.email;
+
+      if (userNewEamil !== data.email) {
+        res.status(403).send({ message: "sorry you are forbidden parson" });
+      }
+
       const filter = { _id: new ObjectId(id) };
       const options = { upsert: true };
       const updateDoc = {
@@ -140,14 +173,22 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/myBookedTutors", async (req, res) => {
+    app.post("/myBookedTutors", verifyToken, async (req, res) => {
       const data = req.body;
+      const userNewEamil = req?.user?.email;
+
+      if (userNewEamil !== data.email) {
+        res.status(403).send({ message: "sorry you are forbidden parson" });
+      }
       const result = await bookedDatabase.insertOne(data);
       res.send(result);
     });
-    app.get("/myBookedTutors/page", async (req, res) => {
-      const email = req.query.email;
-
+    app.get("/myBookedTutors/page", verifyToken, async (req, res) => {
+      const email = req?.query?.email;
+      if (req?.user?.email !== email) {
+        res.status(403).send({ message: "sorry vai mafkoren" });
+        return;
+      }
       let filter = {};
       if (email) {
         filter = { userEmail: email };
