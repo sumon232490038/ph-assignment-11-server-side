@@ -1,11 +1,14 @@
 require("dotenv").config();
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const express = require("express");
 const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 app.use(express.json());
-app.use(cors());
-
+app.use(cors({ origin: ["http://localhost:5173/"], credentials: true }));
+app.use(cookieParser());
+// console.log(process.env.SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xhl2h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -17,9 +20,28 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+// jwt Verify
+
+const verifyToken = (req, res, next) => {
+  next();
+};
 
 async function run() {
   try {
+    // jwt api
+
+    app.post("/jwt", async (req, res) => {
+      const user = req?.body;
+      const token = jwt.sign(user, process.env.SECRET_KEY, { expiresIn: "1h" });
+      res
+        .cookie("SumonToken", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    });
+
+    // main apis
     const txDatabase = client.db("tutorXpressDB").collection("tutorials");
     const usersDatabase = client.db("tutorXpressDB").collection("users");
     const bookedDatabase = client
@@ -149,7 +171,7 @@ async function run() {
       );
       // console.log(result);
 
-      res.send({ count, userCount, sum });
+      res.send([{ count, userCount, sum }]);
     });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
