@@ -6,10 +6,13 @@ const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 app.use(express.json());
-// app.use(cors({ origin: ["http://localhost:5174/"], credentials: true }));
 app.use(
   cors({
-    origin: ["http://localhost:5174"],
+    origin: [
+      "http://localhost:5173",
+      "https://ph-assignment-11-e59b9.web.app",
+      "https://ph-assignment-11-e59b9.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -18,7 +21,6 @@ app.use(cookieParser());
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xhl2h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version...
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -26,15 +28,14 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
-// jwt Verify
 
 const verifyToken = (req, res, next) => {
   const token = req?.cookies?.token;
+  console.log(token);
   if (!token) {
     res.status(401).send({ message: "Sorry the token is not created!" });
     return;
   }
-
   jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
     if (err) {
       res
@@ -43,31 +44,40 @@ const verifyToken = (req, res, next) => {
       return;
     }
     req.user = decoded;
+    next();
   });
-  // console.log(req.user);
-
-  next();
 };
 
 async function run() {
   try {
-    // jwt api
-
-    // main apis
     const txDatabase = client.db("tutorXpressDB").collection("tutorials");
     const usersDatabase = client.db("tutorXpressDB").collection("users");
     const bookedDatabase = client
       .db("tutorXpressDB")
       .collection("bookedTutorials");
 
-    app.post("/jwt", async (req, res) => {
-      const user = req?.body;
+    app.post("/jwt", (req, res) => {
+      const user = req.body;
 
-      const token = jwt.sign(user, process.env.SECRET_KEY, { expiresIn: "5h" });
+      const token = jwt.sign(user, process.env.SECRET_KEY, {
+        expiresIn: "5h",
+      });
+
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
+    app.post("/jwt/logout", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
         })
         .send({ success: true });
     });
@@ -173,12 +183,13 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/myBookedTutors", verifyToken, async (req, res) => {
-      const data = req.body;
+    app.post("/myBookedTutors/added", verifyToken, async (req, res) => {
+      const data = req?.body;
       const userNewEamil = req?.user?.email;
 
-      if (userNewEamil !== data.email) {
+      if (userNewEamil !== data.userEmail) {
         res.status(403).send({ message: "sorry you are forbidden parson" });
+        return;
       }
       const result = await bookedDatabase.insertOne(data);
       res.send(result);
